@@ -10,17 +10,17 @@ def connect_db():
     }
     try:
         conn = psycopg2.connect(**db_info)
-    except Error as err:
-        print("Error while connecting db:", err)
-
-    return conn
+        return conn
+    except OperationalError as err:
+        print("Error while connecting to the database:", err)
+        return None
 
 def migrate(conn):
     cursor = conn.cursor()
 
     # CREATE TABLE
     create_table_query = """
-    CREATE TABLE IF NOT EXISTS events (
+    CREATE TABLE IF NOT EXISTS data_2022_oct (
         event_time TIMESTAMP,
         event_type VARCHAR(50),
         product_id INT,
@@ -29,21 +29,33 @@ def migrate(conn):
         user_session VARCHAR(50)
     );
     """
-    cursor.execute(create_table_query)
+    try:
+        cursor.execute(create_table_query)
+        conn.commit()  # 테이블 생성 후 커밋
+        print("Table created successfully.")
+    except Error as err:
+        print("Error while creating table:", err)
 
     # INSERT DATA
     csv_file_path = "/Users/zingvely/Downloads/subject/customer/data_2022_dec.csv"
-    with open(csv_file_path, 'r') as f:
-        cursor.copy_expert("COPY events FROM STDIN WITH CSV HEADER", f)
+    try:
+        with open(csv_file_path, 'r') as f:
+            cursor.copy_expert("COPY data_2022_oct FROM STDIN WITH CSV HEADER", f)
+        conn.commit()  # 데이터 삽입 후 커밋
+        print("Data inserted successfully.")
+    except FileNotFoundError as fnf_err:
+        print(f"File not found: {fnf_err}")
+    except Error as err:
+        print("Error while inserting data:", err)
 
-    # CLEAN
-    conn.commit()
     cursor.close()
 
 @timefn
 def csv_to_data():
     conn = connect_db()
-    migrate(conn)
+    if conn:
+        migrate(conn)
+        conn.close()
 
 if __name__ == "__main__":
     csv_to_data()
