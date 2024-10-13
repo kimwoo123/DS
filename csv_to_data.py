@@ -1,6 +1,4 @@
 import psycopg2
-import pandas as pd
-import os
 from profile import timefn
 
 def connect_db():
@@ -16,10 +14,6 @@ def connect_db():
         print("Error while connecting db:", err)
 
     return conn
-
-def load_csv():
-    path = "/Users/zingvely/Downloads/subject/customer/data_2022_dec.csv"
-    return pd.read_csv(path)
 
 def migrate(conn):
     cursor = conn.cursor()
