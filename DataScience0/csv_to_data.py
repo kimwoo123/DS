@@ -1,4 +1,5 @@
 import psycopg2
+from psycopg2 import Error, OperationalError
 from os import listdir
 from profile import timefn
 
@@ -27,6 +28,7 @@ def migrate(conn):
         conn.commit()  # 테이블 생성 후 커밋
         print("Table created successfully.")
     except Error as err:
+        conn.rollback()
         print("Error while creating table:", err)
 
     # INSERT DATA
@@ -36,12 +38,14 @@ def migrate(conn):
             table_name = file[:-4]
             try:
                 with open(directory_path + file, 'r') as f:
+                    print(table_name)
                     cursor.copy_expert(f"COPY {table_name} FROM STDIN WITH CSV HEADER", f)
                 conn.commit()  # 데이터 삽입 후 커밋
                 print("Data inserted successfully.")
             except FileNotFoundError as fnf_err:
                 print(f"File not found: {fnf_err}")
             except Error as err:
+                conn.rollback()
                 print("Error while inserting data:", err)
 
     cursor.close()
