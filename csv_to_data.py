@@ -1,4 +1,5 @@
 import psycopg2
+from os import listdir
 from profile import timefn
 
 def connect_db():
@@ -19,34 +20,29 @@ def migrate(conn):
     cursor = conn.cursor()
 
     # CREATE TABLE
-    create_table_query = """
-    CREATE TABLE IF NOT EXISTS data_2022_oct (
-        event_time TIMESTAMP,
-        event_type VARCHAR(50),
-        product_id INT,
-        price FLOAT,
-        user_id INT,
-        user_session VARCHAR(50)
-    );
-    """
+    with open("csv_to_data.sql", "r") as sql_file:
+        create_tables_query = sql_file.read()
     try:
-        cursor.execute(create_table_query)
+        cursor.execute(create_tables_query)
         conn.commit()  # 테이블 생성 후 커밋
         print("Table created successfully.")
     except Error as err:
         print("Error while creating table:", err)
 
     # INSERT DATA
-    csv_file_path = "/Users/zingvely/Downloads/subject/customer/data_2022_dec.csv"
-    try:
-        with open(csv_file_path, 'r') as f:
-            cursor.copy_expert("COPY data_2022_oct FROM STDIN WITH CSV HEADER", f)
-        conn.commit()  # 데이터 삽입 후 커밋
-        print("Data inserted successfully.")
-    except FileNotFoundError as fnf_err:
-        print(f"File not found: {fnf_err}")
-    except Error as err:
-        print("Error while inserting data:", err)
+    directory_path = "/Users/zingvely/Downloads/subject/customer/"
+    for file in listdir(directory_path):
+        if file.endswith(".csv"):
+            table_name = file[:-4]
+            try:
+                with open(directory_path + file, 'r') as f:
+                    cursor.copy_expert(f"COPY {table_name} FROM STDIN WITH CSV HEADER", f)
+                conn.commit()  # 데이터 삽입 후 커밋
+                print("Data inserted successfully.")
+            except FileNotFoundError as fnf_err:
+                print(f"File not found: {fnf_err}")
+            except Error as err:
+                print("Error while inserting data:", err)
 
     cursor.close()
 
