@@ -35,6 +35,9 @@ def migrate(conn):
     directory_path = "/Users/zingvely/Downloads/subject/customer/"
     for file in listdir(directory_path):
         if file.endswith(".csv"):
+            print(file)
+            if file != "data_2023_feb.csv":
+                continue
             table_name = file[:-4]
             try:
                 with open(directory_path + file, 'r') as f:
